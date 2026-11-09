@@ -1,12 +1,12 @@
 # RM WebGuard — Botble plugin 1.2.0
 
-Plugin i pavarur `web-guard` për MartFury / Botble: dashboard, tabela, settings,
+Plugin i pavarur `web-guard` për  Botble: dashboard, tabela, settings,
 permissions dhe agent lokal që komandon motorin mbrojtës të serverit.
 
-U përshtat nga struktura reale e arkivit MartFury: provider, plugin.json, menusë,
+U përshtat nga struktura reale e arkivit : provider, plugin.json, menusë,
 ACL dhe aktivizimit Botble, Laravel 12 dhe PHP >= 8.2. Destinacioni është Ubuntu 22.04,
 Apache prefork + PHP, VirtualHost `*:5555`, `klobes.al`, DocumentRoot
-`/var/www/html/public_html`, projekti `/var/www/html/MartFury` dhe Cloudflare Tunnel lokal.
+`/var/www/html/public_html`, projekti `/var/www/html/ROOT-BOTBLE` dhe Cloudflare Tunnel lokal.
 
 ## Paneli
 
@@ -44,7 +44,7 @@ Pastaj:
 
 ```bash
 tar -xzf /tmp/RM_WEBGUARD_BOTBLE_1.2.0.tar.gz -C /tmp
-sudo bash /tmp/RM_WEBGUARD_BOTBLE_1.2.0/install.sh /var/www/html/MartFury
+sudo bash /tmp/RM_WEBGUARD_BOTBLE_1.2.0/install.sh /var/www/html/ROOT-BOTBLE
 ```
 
 Paketa përfshin plugin-in, motorin dhe bridge. Mos instalo veçmas paketën e mëparshme 1.0.
@@ -77,7 +77,7 @@ Shpaketo paketën e re (jo mbi dosjen e vjetër), hyr në të dhe ekzekuto:
 
 ```bash
 tar -xzf /tmp/RM_WEBGUARD_BOTBLE_1.2.0.tar.gz -C /tmp
-cd /tmp/RM_WEBGUARD_BOTBLE_1.2.0 && sudo bash update.sh /var/www/html/MartFury
+cd /tmp/RM_WEBGUARD_BOTBLE_1.2.0 && sudo bash update.sh /var/www/html/ROOT-BOTBLE
 ```
 
 `update.sh` teston offline, bën kopje rezervë te `/var/backups/rm-webguard-update/`, përditëson motorin, plugin-in,
@@ -179,7 +179,7 @@ në 03:20. Bans aktive dhe komandat në pritje ruhen. Ndrysho retention_days në
  e publikuar të plugin-it për afat tjetër; komandë manuale:
 
 ```bash
-cd /var/www/html/MartFury
+cd /var/www/html/ROOT-BOTBLE
 sudo -u www-data php artisan web-guard:prune --days=90
 ```
 
@@ -193,7 +193,7 @@ aktive; shiko engine/README.md për ndërveprimin me BLOCK-SCANNERS/OFFLINE.
 sudo systemctl status rm-webguard-panel.service --no-pager
 sudo journalctl -u rm-webguard-panel.service -n 50 --no-pager
 sudo rm-webguard status
-cd /var/www/html/MartFury
+cd /var/www/html/ROOT-BOTBLE
 sudo -u www-data php artisan web-guard:self-test
 ```
 
