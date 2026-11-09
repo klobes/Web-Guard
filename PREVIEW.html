@@ -1,0 +1,77 @@
+<!doctype html><html lang="sq"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Web Guard — pamje shembull</title><style>body{margin:0;padding:28px;background:#f5f7fb;font-family:Arial,sans-serif}h1,p{margin-top:0}code{color:#4167d5}a{color:#4167d5}.wg-shell{--bb-card-bg:white;--bb-body-color:#243247}.wg-shell{--wg-blue:#4167d5;--wg-line:rgba(100,116,139,.18);max-width:1500px;margin:auto;color:var(--bb-body-color,#243247)}
+.wg-heading{display:flex;justify-content:space-between;align-items:center;gap:20px;margin:6px 0 24px}.wg-heading h1{font-size:30px;font-weight:700;margin:4px 0}.wg-heading p,.wg-subtle,.wg-footnote{color:var(--bb-secondary-color,#728097);font-size:13px}.wg-eyebrow{color:var(--wg-blue);font-size:11px;font-weight:700;letter-spacing:1.5px}
+.wg-tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--wg-line);margin-bottom:22px;padding-bottom:10px}.wg-tabs a{padding:10px 16px;border-radius:8px;color:inherit;text-decoration:none}.wg-tabs a.active{background:var(--wg-blue);color:white}.wg-card{background:var(--bb-card-bg,var(--bb-body-bg,#fff));border:1px solid var(--wg-line);border-radius:12px;padding:22px;margin-bottom:20px;box-shadow:0 2px 4px rgba(15,23,42,.025)}
+.wg-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.wg-kpi{border-top:3px solid var(--wg-blue)}.wg-kpi>span{font-size:13px;color:var(--bb-secondary-color,#66758b)}.wg-kpi strong{display:block;font-size:36px;line-height:1.4}.wg-kpi strong em{font-style:normal;font-size:19px;margin-left:4px}.wg-kpi small{display:block;font-size:12px;color:var(--bb-secondary-color,#66758b)}
+.wg-grid-main{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:20px}.wg-card-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}.wg-card h2{font-size:17px;font-weight:650;margin:0}.wg-badge{display:inline-block;border-radius:5px;background:rgba(100,116,139,.1);padding:5px 8px;font-size:11px;font-weight:600;white-space:nowrap}.wg-green{color:#16774c;background:rgba(27,156,93,.1)}.wg-red{color:#c34343;background:rgba(211,66,66,.09)}.wg-amber{color:#98670d;background:rgba(228,166,40,.12)}.wg-notice{padding:12px 16px;border-radius:8px;margin:0 0 20px;font-size:13px}.wg-status-list{margin:0 0 20px}.wg-status-list>div{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid var(--wg-line);padding:9px 0}.wg-status-list dt{font-weight:400;font-size:13px}.wg-status-list dd{margin:0;font-size:13px;font-weight:650}.wg-error{font-size:12px;color:#c34343;overflow-wrap:anywhere}
+.wg-legend{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:11px;margin-bottom:12px}.wg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:10px}.wg-dot.blue{background:#4167d5}.wg-dot.green{background:#1b9c5d}.wg-dot.amber{background:#e4a628}#wg-chart{width:100%;min-height:200px}.wg-top-ip{display:flex;justify-content:space-between;border-bottom:1px solid var(--wg-line);padding:13px 0}.wg-table-wrap{overflow-x:auto}.wg-table{width:100%;border-collapse:collapse;font-size:13px}.wg-table th{text-align:left;padding:10px 12px;background:rgba(100,116,139,.05);font-size:11px;text-transform:uppercase;letter-spacing:.3px}.wg-table td{padding:12px;border-bottom:1px solid var(--wg-line);vertical-align:top}.wg-table td small{display:block;margin-top:5px;color:var(--bb-secondary-color,#728097)}.wg-table td code{white-space:nowrap}.wg-path{max-width:380px;overflow-wrap:anywhere}.wg-empty{padding:28px!important;text-align:center;color:var(--bb-secondary-color,#728097)}
+.wg-filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}.wg-filters>.form-control,.wg-filters>.form-select{max-width:280px}.wg-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:20px}.wg-form-grid label>span{display:block;font-size:13px;margin-bottom:7px}.wg-settings-table .form-control{min-width:100px;max-width:150px}.wg-footnote{margin:14px 0 30px}.wg-json{white-space:pre-wrap;font-size:12px;padding:16px;max-height:400px;overflow:auto}.wg-shell fieldset:disabled{opacity:.7}
+@media(max-width:1000px){.wg-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.wg-grid-main{grid-template-columns:1fr}}@media(max-width:600px){.wg-heading{align-items:flex-start;flex-direction:column}.wg-kpis,.wg-form-grid{grid-template-columns:1fr}.wg-card{padding:16px}.wg-tabs a{padding:8px 10px}.wg-filters>.form-control,.wg-filters>.form-select{max-width:none;width:100%}}
+</style><div class="wg-shell"><div class="wg-heading"><div><span class="wg-eyebrow">SIGURIA E FAQES</span><h1>Web Guard</h1><p>Incidentet, bllokimet dhe mbrojtja automatike në një panel.</p></div><div><span class="wg-badge wg-green">Agenti online</span><span class="wg-badge">ENFORCE</span></div></div><nav class="wg-tabs"><a class="active">Dashboard</a><a>Incidentet</a><a>Bllokimet</a><a>Përjashtimet</a><a>Settings</a><a>Komandat / Audit</a></nav><div class="wg-notice wg-amber">PAMJE SHEMBULL — të dhëna demonstrimi; nuk janë statistika nga serveri yt.</div><div id="wg-dashboard" >
+    <div class="wg-kpis">
+        <div class="wg-card wg-kpi"><span>Tentativa skanimi · 24h</span><strong data-wg="suspicious">—</strong><small>Rrugë të refuzuara me 403/404</small></div>
+        <div class="wg-card wg-kpi"><span>IP të bllokuara në Cloudflare</span><strong data-wg="active">—</strong><small><b data-wg="pending">—</b> veprime në pritje</small></div>
+        <div class="wg-card wg-kpi"><span>Vendime monitorimi · 24h</span><strong data-wg="monitor_decisions">—</strong><small>WOULD_BAN · pa bllokim real</small></div>
+        <div class="wg-card wg-kpi"><span>CPU e serverit</span><strong><span id="wg-cpu">—</span><em>%</em></strong><small>Load: <b id="wg-load">—</b> · — CPU</small></div>
+    </div>
+    <div id="wg-live-alert" class="wg-notice —">—</div>
+    <div class="wg-grid-main">
+        <section class="wg-card"><div class="wg-card-head"><h2>Aktiviteti në 24 orë</h2><span class="wg-subtle">Numër ngjarjesh / orë</span></div>
+            <div class="wg-legend"><span class="wg-dot blue"></span>Tentativa <span class="wg-dot green"></span>Bllokime të aplikuara <span class="wg-dot amber"></span>Monitorim</div>
+            <svg id="wg-chart" viewBox="0 0 720 220" role="img" aria-label="Grafiku i tentativave dhe vendimeve"></svg>
+            <div class="wg-subtle" id="wg-chart-range">Të dhënat janë nga log-u lokal i portës 5555.</div>
+        </section>
+        <section class="wg-card"><div class="wg-card-head"><h2>Gjendja operative</h2></div><dl class="wg-status-list">
+            <div><dt>Mënyra aktive</dt><dd id="wg-mode">—</dd></div>
+            <div><dt>Fail2ban</dt><dd id="wg-f2b">—</dd></div>
+            <div><dt>Token Cloudflare në server</dt><dd>—</dd></div>
+            <div><dt>API Cloudflare · suksesi i fundit</dt><dd id="wg-api-success">—</dd></div>
+            <div><dt>Komanda në pritje</dt><dd data-wg="commands_pending">—</dd></div>
+            <div><dt>Evente në radhë</dt><dd id="wg-queue">—</dd></div>
+            <div><dt>Evente të humbura nga kufiri</dt><dd id="wg-dropped">—</dd></div>
+            <div><dt>Settings të aplikuara</dt><dd><span data-wg="applied_revision">—</span> / <span data-wg="revision">—</span></dd></div>
+        </dl><p class="wg-subtle">MONITOR regjistron vendime. ENFORCE krijon bllokime reale. Bllokimet e Cloudflare vlejnë për të gjithë zonën.</p>
+        <div id="wg-agent-error" class="wg-error">—</div></section>
+    </div>
+    <div class="wg-grid-main">
+        <section class="wg-card"><div class="wg-card-head"><h2>Ngjarjet e fundit</h2></div>
+            <div class="wg-table-wrap"><table class="wg-table"><thead><tr><th>Koha</th><th>IP</th><th>Ngjarja</th><th>Rruga / rregulli</th></tr></thead><tbody>
+            <tr><td>14:12:15</td><td><code>198.51.100.42</code></td><td><span class="wg-badge">BAN_EDGE</span></td><td class="wg-path">rm-web-probes</td></tr><tr><td>14:12:14</td><td><code>198.51.100.43</code></td><td><span class="wg-badge">SUSPICIOUS_REQUEST</span></td><td class="wg-path">/wp-login.php</td></tr><tr><td>14:12:13</td><td><code>198.51.100.44</code></td><td><span class="wg-badge">SUSPICIOUS_REQUEST</span></td><td class="wg-path">/.env</td></tr><tr><td>14:12:12</td><td><code>198.51.100.45</code></td><td><span class="wg-badge">UNBAN_EDGE</span></td><td class="wg-path">rm-web-sensitive</td></tr>
+            </tbody></table></div><p class="wg-subtle">Lista rifreskohet kur hap faqen përsëri; numrat dhe grafiku rifreskohen automatikisht.</p>
+        </section>
+        <section class="wg-card"><div class="wg-card-head"><h2>IP me më shumë tentativa</h2><span class="wg-subtle">24h</span></div>
+            <div class="wg-top-ip"><code>198.51.100.42</code><strong>89</strong></div><div class="wg-top-ip"><code>198.51.100.43</code><strong>61</strong></div><div class="wg-top-ip"><code>198.51.100.44</code><strong>44</strong></div><div class="wg-top-ip"><code>198.51.100.45</code><strong>32</strong></div><div class="wg-top-ip"><code>198.51.100.46</code><strong>18</strong></div>
+        </section>
+    </div>
+</div>
+<script type="application/json" id="wg-initial">{"mode": "ENFORCE", "online": true, "last_seen": "SHEMBULL", "last_error": null, "suspicious": 482, "active": 11, "pending": 1, "monitor_decisions": 7, "commands_pending": 0, "revision": 4, "applied_revision": 4, "metrics": {"cpu_percent": 12.4, "load1": 0.62, "fail2ban_online": true, "queued_events": 0, "dropped_events": 0, "api_last_success": 1791986400}, "chart": [{"hour": "00:00", "requests": 0, "bans": 0, "monitor": 0}, {"hour": "01:00", "requests": 1, "bans": 0, "monitor": 0}, {"hour": "02:00", "requests": 2, "bans": 0, "monitor": 0}, {"hour": "03:00", "requests": 1, "bans": 0, "monitor": 0}, {"hour": "04:00", "requests": 3, "bans": 0, "monitor": 0}, {"hour": "05:00", "requests": 0, "bans": 0, "monitor": 0}, {"hour": "06:00", "requests": 4, "bans": 0, "monitor": 0}, {"hour": "07:00", "requests": 6, "bans": 0, "monitor": 0}, {"hour": "08:00", "requests": 12, "bans": 0, "monitor": 0}, {"hour": "09:00", "requests": 18, "bans": 0, "monitor": 0}, {"hour": "10:00", "requests": 21, "bans": 0, "monitor": 0}, {"hour": "11:00", "requests": 35, "bans": 1, "monitor": 1}, {"hour": "12:00", "requests": 48, "bans": 2, "monitor": 1}, {"hour": "13:00", "requests": 65, "bans": 4, "monitor": 1}, {"hour": "14:00", "requests": 37, "bans": 1, "monitor": 1}, {"hour": "15:00", "requests": 22, "bans": 0, "monitor": 0}, {"hour": "16:00", "requests": 17, "bans": 0, "monitor": 0}, {"hour": "17:00", "requests": 14, "bans": 0, "monitor": 0}, {"hour": "18:00", "requests": 12, "bans": 0, "monitor": 0}, {"hour": "19:00", "requests": 7, "bans": 0, "monitor": 0}, {"hour": "20:00", "requests": 5, "bans": 0, "monitor": 0}, {"hour": "21:00", "requests": 4, "bans": 0, "monitor": 0}, {"hour": "22:00", "requests": 2, "bans": 0, "monitor": 0}, {"hour": "23:00", "requests": 1, "bans": 0, "monitor": 0}]}</script>
+</div><script>(function(){
+    'use strict';
+    function start(){
+        document.querySelectorAll('[data-wg-confirm]').forEach(function(form){form.addEventListener('submit',function(e){if(!window.confirm(form.dataset.wgConfirm))e.preventDefault();});});
+        var panel=document.getElementById('wg-dashboard');if(!panel)return;
+        function text(id,value){var el=document.getElementById(id);if(el)el.textContent=value==null?'—':String(value);}
+        function chart(rows){
+            var svg=document.getElementById('wg-chart'),ns='http://www.w3.org/2000/svg';
+            while(svg.firstChild)svg.removeChild(svg.firstChild);
+            function add(tag,attrs,label){var el=document.createElementNS(ns,tag);Object.keys(attrs).forEach(function(k){el.setAttribute(k,attrs[k]);});if(label!=null)el.textContent=label;svg.appendChild(el);return el;}
+            var max=Math.max(1,...rows.map(function(r){return Math.max(r.requests,r.bans,r.monitor);})),width=660,height=160;
+            for(var i=0;i<5;i++){var y=20+i*40;add('line',{x1:45,y1:y,x2:705,y2:y,stroke:'rgba(100,116,139,.2)'});add('text',{x:35,y:y+4,'text-anchor':'end',fill:'#728097','font-size':10},Math.round(max*(4-i)/4));}
+            [['requests','#4167d5'],['bans','#1b9c5d'],['monitor','#e4a628']].forEach(function(series){var points=rows.map(function(r,index){return (45+index*width/Math.max(1,rows.length-1))+','+(180-height*r[series[0]]/max);}).join(' ');add('polyline',{points:points,fill:'none',stroke:series[1],'stroke-width':2.3,'stroke-linejoin':'round'});});
+            rows.forEach(function(r,i){if(i%4===0||i===rows.length-1)add('text',{x:45+i*width/Math.max(1,rows.length-1),y:205,'text-anchor':'middle',fill:'#728097','font-size':10},r.hour);});
+            if(rows.length)text('wg-chart-range',rows[0].hour+' → '+rows[rows.length-1].hour+' · Log lokal, porta 5555');
+        }
+        function render(data){
+            panel.querySelectorAll('[data-wg]').forEach(function(el){el.textContent=String(data[el.dataset.wg]??'—');});
+            text('wg-cpu',data.metrics.cpu_percent);text('wg-load',data.metrics.load1);text('wg-mode',data.mode);
+            text('wg-f2b',data.metrics.fail2ban_online?'Online':'Pa konfirmim');text('wg-queue',data.metrics.queued_events);text('wg-dropped',data.metrics.dropped_events);text('wg-agent-error',data.last_error);
+            text('wg-api-success',data.metrics.api_last_success?new Date(data.metrics.api_last_success*1000).toISOString().replace('T',' ').slice(0,19):'Pa konfirmim');
+            var alert=document.getElementById('wg-live-alert');alert.className='wg-notice '+(data.online?'wg-green':'wg-red');alert.textContent=data.online?'Agenti online · Përditësimi i fundit: '+data.last_seen:'Agenti nuk ka dërguar të dhëna të fundit. Numrat mund të jenë të vjetër.';chart(data.chart);
+        }
+        var initial=document.getElementById('wg-initial');if(initial)render(JSON.parse(initial.textContent));
+        if(!panel.dataset.endpoint)return;
+        var busy=false;
+        setInterval(async function(){if(document.hidden||busy)return;busy=true;try{var response=await fetch(panel.dataset.endpoint,{credentials:'same-origin',headers:{Accept:'application/json'}});if(!response.ok)throw new Error('HTTP '+response.status);render(await response.json());}catch(error){var alert=document.getElementById('wg-live-alert');alert.className='wg-notice wg-red';alert.textContent='Rifreskimi i panelit nuk u konfirmua. Hap përsëri faqen.';}finally{busy=false;}},10000);
+    }
+    if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+})();
+</script></html>

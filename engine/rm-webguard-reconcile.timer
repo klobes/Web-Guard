@@ -1,0 +1,11 @@
+[Unit]
+Description=Retry bans and release expired RM WebGuard Cloudflare blocks
+
+[Timer]
+OnBootSec=15s
+OnUnitActiveSec=10s
+AccuracySec=1s
+Unit=rm-webguard-reconcile.service
+
+[Install]
+WantedBy=timers.target

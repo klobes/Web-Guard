@@ -1,0 +1,11 @@
+{
+    "id": "emiron/web-guard",
+    "name": "Web Guard",
+    "namespace": "Botble\\WebGuard\\",
+    "provider": "Botble\\WebGuard\\Providers\\WebGuardServiceProvider",
+    "author": "Emiron",
+    "url": "https://klobes.al",
+    "version": "1.2.0",
+    "description": "Dashboard për skanimet, bllokimet e përkohshme dhe motorin mbrojtës në server.",
+    "minimum_core_version": "7.3.0"
+}

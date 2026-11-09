@@ -1,0 +1,20 @@
+[Unit]
+Description=RM WebGuard Botble dashboard bridge
+After=network.target apache2.service fail2ban.service
+
+[Service]
+Type=simple
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 /opt/rm-webguard/panel_bridge.py run
+Restart=on-failure
+RestartSec=10s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/etc/rm-webguard /var/lib/rm-webguard /etc/fail2ban/jail.d /etc/fail2ban/filter.d -/etc/apache2/rm-guards /run /var/log
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+
+[Install]
+WantedBy=multi-user.target

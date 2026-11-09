@@ -1,0 +1,288 @@
+"""Validated settings for the standalone RM WebGuard module."""
+import ipaddress
+import json
+from pathlib import Path
+import re
+import time
+
+CONFIG = Path('/etc/rm-webguard')
+STATE = Path('/var/lib/rm-webguard')
+JAILS = ('rm-web-probes', 'rm-web-sensitive', 'rm-web-flood')
+
+# Custom scan paths managed from the panel. Only plain tokens are accepted; the
+# regex is always built here, never taken from the panel.
+PATH_JAILS = ('rm-web-probes', 'rm-web-sensitive')
+PATH_TYPES = ('segment', 'extension')
+PATH_LIMIT = 200
+PROTECTED_SEGMENTS = frozenset((
+    'admin', 'login', 'logout', 'register', 'api', 'storage', 'assets', 'public', 'css', 'js', 'img', 'images',
+    'fonts', 'vendor', 'themes', 'build', 'uploads', 'cdn-cgi', '.well-known', 'favicon.ico', 'robots.txt',
+    'sitemap.xml', 'index.php', 'manifest.json', 'sw.js', 'radius-manager', 'products', 'product', 'cart',
+    'checkout', 'account', 'customer', 'customers', 'search', 'contact', 'blog', 'news'))
+PROTECTED_EXTENSIONS = frozenset((
+    'php', 'html', 'htm', 'js', 'css', 'json', 'xml', 'txt', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico',
+    'woff', 'woff2', 'ttf', 'map', 'pdf', 'mp4', 'webm'))
+SEGMENT_RE = re.compile(r'[a-z0-9._~-]{1,64}(?:/[a-z0-9._~-]{1,64}){0,3}')
+EXTENSION_RE = re.compile(r'[a-z0-9]{1,10}')
+BUILTIN_PROBE = (r'(^|/)(wp-login\.php|wp-config\.php|wp-admin|wp-content|wp-includes|xmlrpc\.php|_next|\.git)(/|$)'
+                 r'|(^|/)\.env[^/]*(/|$)|^/(wp|wordpress|server-status|server-info)(/|$)')
+FILTER_HEAD = r'^<HOST>\s+-\s+-\s+(?:\[[^\]]*\]\s*)?"(?:GET|HEAD|POST|PUT|PATCH|DELETE|OPTIONS) '
+FILTER_TAIL = r' HTTP/[0-9.]+" (?:403|404)\s*$'
+
+
+def validate_paths(paths):
+    if not isinstance(paths, dict) or set(paths) - set(PATH_JAILS):
+        raise ValueError('paths duhet objekt vetem me rm-web-probes dhe rm-web-sensitive')
+    clean, seen = {}, set()
+    for jail in PATH_JAILS:
+        items = paths.get(jail, [])
+        if not isinstance(items, list) or len(items) > PATH_LIMIT:
+            raise ValueError('paths.' + jail + ' duhet liste me maksimumi ' + str(PATH_LIMIT))
+        clean[jail] = []
+        for item in items:
+            if not isinstance(item, dict) or set(item) != {'type', 'value'}:
+                raise ValueError('Rruge e pavlefshme te paths.' + jail)
+            kind, text = item['type'], item['value']
+            if kind not in PATH_TYPES or not isinstance(text, str):
+                raise ValueError('Tip ose vlere e pavlefshme te paths.' + jail)
+            text = text.lower()
+            if kind == 'extension':
+                valid = bool(EXTENSION_RE.fullmatch(text)) and text not in PROTECTED_EXTENSIONS
+            else:
+                parts = text.split('/')
+                valid = (len(text) <= 80 and bool(SEGMENT_RE.fullmatch(text))
+                         and all(re.search('[a-z0-9]', part) for part in parts)
+                         and parts[0] not in PROTECTED_SEGMENTS)
+            if not valid:
+                raise ValueError('Rruge e pavlefshme ose e rezervuar: ' + repr(text)[:60])
+            if (kind, text) in seen:
+                raise ValueError('Rruge e dyfishuar: ' + repr(text)[:60])
+            seen.add((kind, text))
+            clean[jail].append({'type': kind, 'value': text})
+    return clean
+
+
+def custom_tokens(items, kind):
+    return [item['value'] for item in items if item['type'] == kind]
+
+
+def filter_lines(items):
+    """Extra Fail2ban failregex lines for one jail's custom entries."""
+    lines = []
+    segments, extensions = custom_tokens(items, 'segment'), custom_tokens(items, 'extension')
+    if segments:
+        lines.append(FILTER_HEAD + r'(?i:/(?:[^" ]*/)?(?:' + '|'.join(map(re.escape, segments))
+                     + r')(?:/[^" ]*)?)' + FILTER_TAIL)
+    if extensions:
+        lines.append(FILTER_HEAD + r'(?i:/[^" ]*\.(?:' + '|'.join(map(re.escape, extensions))
+                     + r')(?:/[^" ]*)?)' + FILTER_TAIL)
+    return lines
+
+
+def render_filter(base, items):
+    lines = filter_lines(items)
+    if not lines:
+        return base
+    marker = '\nignoreregex ='
+    if base.count(marker) != 1:
+        raise ValueError('Filtri baze nuk ka saktesisht nje ignoreregex')
+    return base.replace(marker, ''.join('\n            ' + line for line in lines) + marker, 1)
+
+
+def probe_regex(settings):
+    """Built-in scan paths plus the custom ones; decides which log lines become panel incidents."""
+    parts = [BUILTIN_PROBE]
+    items = [item for jail in PATH_JAILS for item in (settings.get('paths') or {}).get(jail, [])]
+    segments, extensions = custom_tokens(items, 'segment'), custom_tokens(items, 'extension')
+    if segments:
+        parts.append(r'(^|/)(?:' + '|'.join(map(re.escape, segments)) + r')(/|$)')
+    if extensions:
+        parts.append(r'\.(?:' + '|'.join(map(re.escape, extensions)) + r')(/|$)')
+    return re.compile('|'.join(parts), re.I)
+
+
+CUSTOM_MARK = '# Generated by RM WebGuard v1 custom paths'
+
+
+def render_custom_guard(settings):
+    """Apache 403 rules (before PHP/Laravel) for the panel's enabled paths, or None when there are none.
+
+    Same semantics as the Fail2ban filter lines and probe_regex: a segment anywhere in the path, or a file extension.
+    """
+    items = [item for jail in PATH_JAILS for item in (settings.get('paths') or {}).get(jail, [])]
+    segments, extensions = custom_tokens(items, 'segment'), custom_tokens(items, 'extension')
+    conditions = []
+    if segments:
+        conditions.append(r'(^|/)(?:' + '|'.join(map(re.escape, segments)) + r')(/|$)')
+    if extensions:
+        conditions.append(r'\.(?:' + '|'.join(map(re.escape, extensions)) + r')(/|$)')
+    if not conditions:
+        return None
+    lines = [CUSTOM_MARK, '# Panel paths refused with 403 before the application; Fail2ban still counts the 403s.',
+             'ErrorDocument 403 "' + BLOCKED_PAGE + '"', 'RewriteEngine On']
+    for index, pattern in enumerate(conditions):
+        lines.append('RewriteCond %{REQUEST_URI} "' + pattern + '" [NC' + (',OR' if index < len(conditions) - 1 else '') + ']')
+    lines.append('RewriteRule ^ - [F,L]')
+    return '\n'.join(lines) + '\n'
+
+
+# Emergency lockdown: Apache only answers the allowlist (plus loopback). Always timed, never permanent.
+LOCKDOWN_LEVELS = ('off', 'admin', 'full')
+LOCKDOWN_MARK = '# Generated by RM WebGuard v1 lockdown'
+
+
+def validate_lockdown(value, ignoreip):
+    if not isinstance(value, dict) or set(value) != {'level', 'until'}:
+        raise ValueError('lockdown duhet te ket vetem level dhe until')
+    if value['level'] not in LOCKDOWN_LEVELS:
+        raise ValueError('lockdown.level duhet off, admin ose full')
+    if value['level'] == 'off':
+        return {'level': 'off', 'until': 0}
+    until = value['until']
+    if type(until) is not int or not 1 <= until <= 4102444800:
+        raise ValueError('lockdown.until duhet kohe unix e vlefshme')
+    if not ignoreip:
+        raise ValueError('lockdown kerkon te pakten nje IP te perjashtuar, perndryshe mbyll edhe administratorin')
+    return {'level': value['level'], 'until': until}
+
+
+def lockdown_level(settings, now=None):
+    lock = settings.get('lockdown') or {'level': 'off', 'until': 0}
+    now = time.time() if now is None else now
+    return lock['level'] if lock['level'] != 'off' and lock['until'] > now else 'off'
+
+
+# Self-contained page (no external files, fonts or images). Rules for the Apache quoted text:
+# no double quotes, backslashes, percent or dollar signs; ASCII only (HTML entities for accents).
+def build_page(title, sq_h, sq_p, en_h, en_p, badge, button=''):
+    return (
+    "<!doctype html><html lang='sq'><head><meta charset='utf-8'>"
+    "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+    "<meta name='robots' content='noindex,nofollow'>"
+    "<title>" + title + "</title>"
+    "<style>"
+    "a.b{display:inline-block;margin-top:20px;padding:11px 22px;border-radius:10px;background:#4167d5;"
+    "color:#fff;text-decoration:none;font-weight:600}"
+    "a.b:hover{background:#5578e6}"
+    "*{box-sizing:border-box}"
+    "body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;"
+    "font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#e8edf7;"
+    "background:#0d1530 linear-gradient(160deg,#1d2f63,#0d1530 55vh,#080c1c)}"
+    ".c{max-width:520px;width:calc(100vw - 48px);text-align:center;background:rgba(255,255,255,.05);"
+    "border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:44px 32px;"
+    "box-shadow:0 20px 60px rgba(0,0,0,.45)}"
+    ".i{width:76px;height:76px;margin:0 auto 22px;border-radius:38px;display:flex;align-items:center;"
+    "justify-content:center;background:rgba(228,166,40,.14);border:2px solid #e4a628}"
+    ".i svg{width:38px;height:38px;fill:none;stroke:#e4a628;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}"
+    "h1{margin:0 0 8px;font-size:26px;line-height:1.25}"
+    "p{margin:0 0 6px;color:#b6c2dc}"
+    "hr{border:0;border-top:1px solid rgba(255,255,255,.12);margin:24px 0}"
+    "h2{margin:0 0 8px;font-size:19px;color:#e8edf7}"
+    ".s{display:inline-block;margin-top:22px;padding:6px 14px;border-radius:999px;font-size:13px;"
+    "color:#e4a628;background:rgba(228,166,40,.12)}"
+    "</style></head><body><main class='c'>"
+    "<div class='i'><svg viewBox='0 0 24 24'><rect x='4' y='11' width='16' height='10' rx='2'/>"
+    "<path d='M8 11V7a4 4 0 0 1 8 0v4'/></svg></div>"
+    "<h1>" + sq_h + "</h1><p>" + sq_p + "</p><hr>"
+    "<h2>" + en_h + "</h2><p>" + en_p + "</p>"
+    + button +
+    "<br><span class='s'>" + badge + "</span>"
+    "</main></body></html>"
+    )
+
+
+LOCKDOWN_PAGE = build_page(
+    'Mirembajtje &middot; Maintenance',
+    'Faqja &euml;sht&euml; p&euml;rkohib&euml;sisht e padisponueshme',
+    'Po kryejm&euml; mir&euml;mbajtje p&euml;r siguri. Ju lutemi provoni p&euml;rs&euml;ri pas pak.',
+    'Temporarily unavailable', 'We are performing security maintenance. Please try again shortly.',
+    '403 &middot; Mbrojtja aktive / Protection active')
+BLOCKED_PAGE = build_page(
+    'Qasja nuk lejohet &middot; Access denied',
+    'Qasja n&euml; k&euml;t&euml; adres&euml; nuk lejohet',
+    'Ky burim &euml;sht&euml; i mbrojtur. N&euml;se keni ardhur k&euml;tu gabimisht, kthehuni te faqja kryesore.',
+    'Access denied', 'This resource is protected. If you got here by mistake, go back to the home page.',
+    '403 &middot; Mbrojtja aktive / Protection active',
+    "<a class='b' href='/'>Kthehu te faqja kryesore &middot; Back to home</a>")
+for _page in (LOCKDOWN_PAGE, BLOCKED_PAGE):
+    assert not set('"\\%$') & set(_page) and _page.isascii() and len(_page) < 4000
+
+
+def render_lockdown(settings, now=None):
+    """Apache config text for the active lockdown, or None when it is off or expired."""
+    level = lockdown_level(settings, now)
+    if level == 'off':
+        return None
+    networks = ['127.0.0.1', '::1'] + [item for item in settings['ignoreip'] if item not in ('127.0.0.1/32', '::1/128')]
+    requires = ''.join('        Require ip ' + item + '\n' for item in networks)
+    opening, closing = (('<Location "/">', '</Location>') if level == 'full'
+                        else ('<LocationMatch "^/admin(/|$)">', '</LocationMatch>'))
+    return (LOCKDOWN_MARK + '; level=' + level + ' until=' + str(settings['lockdown']['until']) + '\n'
+            '# Removed automatically after the deadline; manual: sudo rm-webguard lockdown-off\n'
+            + opening + '\n'
+            '    ErrorDocument 403 "' + LOCKDOWN_PAGE + '"\n'
+            '    <RequireAny>\n' + requires.replace('        Require', '        Require') +
+            '    </RequireAny>\n'
+            + closing + '\n')
+
+
+def validate(settings):
+    value = json.loads(json.dumps(settings))
+    if value.get('version') != 1:
+        raise ValueError('settings.version duhet te jete 1')
+    for key in ('enabled', 'dry_run', 'local_firewall', 'increment_bantime'):
+        if type(value.get(key)) is not bool:
+            raise ValueError(key + ' duhet true/false')
+    limits = {'maximum_bantime_seconds': (1, 604800),
+              'sync_interval_seconds': (1, 300), 'maximum_changes_per_sync': (1, 20)}
+    for key, (low, high) in limits.items():
+        if type(value.get(key)) is not int or not low <= value[key] <= high:
+            raise ValueError(key + ' jashte kufijve te lejuar')
+    if not re.fullmatch(r'[a-f0-9]{32}', value.get('instance_id', '')):
+        raise ValueError('instance_id duhet gjeneruar nga instaluesi')
+    zone = value.get('zone_id', '')
+    if zone and not re.fullmatch(r'[a-fA-F0-9]{32}', zone):
+        raise ValueError('zone_id duhet 32 karaktere hex')
+    if value['enabled'] and not value['dry_run'] and not zone:
+        raise ValueError('zone_id mungon per bllokimin real')
+    if value.get('token_file') != '/etc/rm-webguard/cloudflare.token':
+        raise ValueError('token_file duhet /etc/rm-webguard/cloudflare.token')
+    if not isinstance(value.get('ignoreip'), list):
+        raise ValueError('ignoreip duhet liste IP/CIDR, jo hostname')
+    try:
+        value['ignoreip'] = [str(ipaddress.ip_network(item, strict=False)) for item in value['ignoreip']]
+    except (ValueError, TypeError):
+        raise ValueError('ignoreip duhet te permbaje vetem IP/CIDR te vlefshme') from None
+    if set(value.get('jails', {})) != set(JAILS):
+        raise ValueError('Lista jails nuk eshte e sakte')
+    for name in JAILS:
+        jail = value['jails'][name]
+        if type(jail.get('enabled')) is not bool:
+            raise ValueError(name + '.enabled duhet true/false')
+        for key in ('maxretry', 'findtime', 'bantime'):
+            high = 10000 if key == 'maxretry' else value['maximum_bantime_seconds'] if key == 'bantime' else 86400
+            if type(jail.get(key)) is not int or not 1 <= jail[key] <= high:
+                raise ValueError(name + '.' + key + ' jashte kufijve')
+    if 'paths' in value:
+        value['paths'] = validate_paths(value['paths'])
+    if 'lockdown' in value:
+        value['lockdown'] = validate_lockdown(value['lockdown'], value['ignoreip'])
+    return value
+
+
+def load(active=True):
+    return validate(json.loads((CONFIG / ('active.json' if active else 'settings.json')).read_text()))
+
+
+def canonical_ip(value):
+    if '%' in value:
+        raise ValueError('IP me scope identifier nuk lejohet')
+    address = ipaddress.ip_address(value)
+    if getattr(address, 'ipv4_mapped', None):
+        address = address.ipv4_mapped
+    return address
+
+
+def ignored(address, settings):
+    return not address.is_global or any(address in ipaddress.ip_network(network)
+                                       for network in settings['ignoreip'])

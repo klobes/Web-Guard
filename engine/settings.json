@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "enabled": true,
+  "dry_run": true,
+  "local_firewall": true,
+  "zone_id": "",
+  "token_file": "/etc/rm-webguard/cloudflare.token",
+  "instance_id": "",
+  "ignoreip": ["127.0.0.0/8", "::1", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "fc00::/7", "fe80::/10"],
+  "increment_bantime": false,
+  "maximum_bantime_seconds": 86400,
+  "sync_interval_seconds": 5,
+  "maximum_changes_per_sync": 5,
+  "jails": {
+    "rm-web-probes": {"enabled": true, "maxretry": 3, "findtime": 60, "bantime": 3600},
+    "rm-web-sensitive": {"enabled": true, "maxretry": 1, "findtime": 60, "bantime": 3600},
+    "rm-web-flood": {"enabled": false, "maxretry": 60, "findtime": 10, "bantime": 600}
+  }
+}
